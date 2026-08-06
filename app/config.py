@@ -18,5 +18,10 @@ CITY_BY_ID = {c["id"]: c for c in CITIES}
 # How often the scheduler refreshes weather data (seconds)
 WEATHER_REFRESH_SECONDS = 15 * 60
 
+# Currency pairs to track (base USD)
+FX_PAIRS = [("USD", "JPY"), ("USD", "CAD"), ("USD", "EUR")]
+FX_REFRESH_SECONDS = 15 * 60
+FX_HISTORY_DAYS = 30
+
 # Open-Meteo request timeout (seconds)
 HTTP_TIMEOUT = 12

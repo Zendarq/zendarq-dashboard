@@ -26,6 +26,7 @@ async def lifespan(app: FastAPI):
     sched = scheduler.start_scheduler()
     # Immediate first fetch so the dashboard isn't empty on boot.
     sched.add_job(scheduler.refresh_all_weather, "date", run_date=None)  # runs once, now
+    sched.add_job(scheduler.refresh_fx, "date", run_date=None)           # runs once, now
     yield
     scheduler.stop_scheduler()
 
@@ -76,6 +77,11 @@ async def api_daily(city: str) -> dict:
     if city not in CITY_BY_ID:
         raise HTTPException(status_code=404, detail=f"unknown city: {city}")
     return {"city": city, "days": db.get_daily(city)}
+
+
+@app.get("/api/fx")
+async def api_fx() -> dict:
+    return {"pairs": db.get_fx()}
 
 
 @app.post("/api/refresh")

@@ -40,6 +40,8 @@ document.addEventListener("alpine:init", () => {
     units: "f",
     selected: ["nyc", "tokyo", "chicago"],
     current: [],
+    fx: [],
+    fxUpdated: null,
     hourly: {},
     daily: {},
     lastUpdated: null,
@@ -47,6 +49,7 @@ document.addEventListener("alpine:init", () => {
     headerTime: "",
     tick: 0,
     charts: {},
+    fxCharts: {},
     timers: [],
 
     /* ---------- lifecycle ---------- */
@@ -63,8 +66,9 @@ document.addEventListener("alpine:init", () => {
     async loadAll(silent = false) {
       if (!silent) this.refreshing = true;
       try {
-        const [cur, ...rest] = await Promise.all([
+        const [cur, fx, ...rest] = await Promise.all([
           fetch("/api/current").then(r => r.json()),
+          fetch("/api/fx").then(r => r.json()),
           ...this.selected.map(cid => fetch(`/api/hourly?city=${cid}`).then(r => r.json())),
           ...this.selected.map(cid => fetch(`/api/daily?city=${cid}`).then(r => r.json())),
         ]);
@@ -72,10 +76,13 @@ document.addEventListener("alpine:init", () => {
         const hourly = rest.slice(0, n);
         const daily = rest.slice(n);
         this.current = cur.cities;
+        this.fx = fx.pairs;
+        const times = this.fx.map(p => p.updated_at).filter(Boolean);
+        this.fxUpdated = times.length ? new Date(Math.max(...times.map(t => new Date(t).getTime()))).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : null;
         this.hourly = Object.fromEntries(hourly.map(x => [x.city, x.points]));
         this.daily = Object.fromEntries(daily.map(x => [x.city, x.days]));
         this.lastUpdated = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-        this.$nextTick(() => this.buildCharts());
+        this.$nextTick(() => { this.buildCharts(); this.buildFxCharts(); });
       } catch (e) {
         console.error("loadAll failed:", e);
       } finally {
@@ -158,6 +165,77 @@ document.addEventListener("alpine:init", () => {
               y: { position: "left", grid: { color: "rgba(255,255,255,.06)" }, ticks: { color: "#8b9bb4", font: { size: 10 } } },
               yPrecip: { position: "right", min: 0, max: 100, grid: { display: false }, ticks: { color: "#8b9bb4", font: { size: 10 }, callback: v => v + "%" } },
             },
+          },
+        });
+      });
+    },
+
+    /* ---------- FX ---------- */
+
+    fxId(p) { return p.pair.replace("/", "_"); },
+
+    fxRate(p) {
+      if (p.rate == null) return "—";
+      const decimals = p.rate >= 100 ? 2 : 4;
+      return p.rate.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    },
+
+    fxChange(p, days) {
+      const h = p.history;
+      if (!h || h.length < 2 || p.rate == null) return null;
+      const target = new Date();
+      target.setDate(target.getDate() - days);
+      const targetIso = target.toISOString().slice(0, 10);
+      let prev = null;
+      for (const e of h) {
+        if (e.date <= targetIso) prev = e.rate;
+        else break;
+      }
+      if (prev == null) prev = h[0].rate;
+      return ((p.rate - prev) / prev) * 100;
+    },
+
+    fxChangeText(p, days) {
+      const c = this.fxChange(p, days);
+      if (c == null) return "—";
+      const arrow = c > 0.0001 ? "▲" : c < -0.0001 ? "▼" : "•";
+      return `${arrow} ${Math.abs(c).toFixed(2)}%`;
+    },
+
+    fxChangeClass(p, days) {
+      const c = this.fxChange(p, days);
+      if (c == null) return "flat";
+      return c > 0.0001 ? "up" : c < -0.0001 ? "down" : "flat";
+    },
+
+    buildFxCharts() {
+      Object.keys(this.fxCharts).forEach(k => { this.fxCharts[k].destroy(); delete this.fxCharts[k]; });
+      this.fx.forEach(p => {
+        const el = document.getElementById("fxchart-" + this.fxId(p));
+        if (!el || !p.history || p.history.length < 2) return;
+        const trend = p.rate - p.history[0].rate;
+        const color = trend > 0 ? "#34d399" : trend < 0 ? "#f87171" : "#8b9bb4";
+        this.fxCharts[p.pair] = new Chart(el.getContext("2d"), {
+          type: "line",
+          data: {
+            labels: p.history.map(h => h.date),
+            datasets: [{
+              data: p.history.map(h => h.rate),
+              borderColor: color, backgroundColor: color + "26",
+              fill: true, tension: 0.35, pointRadius: 0, borderWidth: 1.5,
+            }],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "#0e1626", borderColor: "rgba(255,255,255,.12)", borderWidth: 1,
+                titleColor: "#e6ecf5", bodyColor: "#8b9bb4", padding: 8, cornerRadius: 8,
+                callbacks: { label: ctx => this.fxRate({ rate: ctx.parsed.y }) },
+              },
+            },
+            scales: { x: { display: false }, y: { display: false } },
           },
         });
       });

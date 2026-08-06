@@ -91,6 +91,45 @@ body {
 }
 .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+/* ---------- currencies ---------- */
+
+.fx { margin-bottom: 18px; }
+
+.fx-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 8px; margin-bottom: 10px;
+}
+.fx-head h2 {
+  margin: 0; font-size: 0.78rem; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
+}
+.fx-updated { color: var(--muted); font-size: 0.72rem; }
+
+.fx-strip { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 640px) { .fx-strip { grid-template-columns: repeat(3, 1fr); } }
+
+.fx-card {
+  background: linear-gradient(180deg, var(--card) 0%, var(--card2) 100%);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 12px 14px 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "pair   change"
+    "rate   change"
+    "spark  spark";
+  align-items: center;
+  gap: 0 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+.fx-pair { grid-area: pair; font-size: 0.74rem; color: var(--muted); font-weight: 700; letter-spacing: 0.05em; }
+.fx-rate { grid-area: rate; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.fx-change { grid-area: change; justify-self: end; font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; padding: 3px 8px; border-radius: 8px; }
+.fx-change.up   { color: #34d399; background: rgba(52, 211, 153, 0.10); }
+.fx-change.down { color: #f87171; background: rgba(248, 113, 113, 0.10); }
+.fx-change.flat { color: var(--muted); background: rgba(255, 255, 255, 0.05); }
+.fx-spark { grid-area: spark; position: relative; height: 42px; margin-top: 4px; }
+
 /* ---------- grid ---------- */
 
 .grid {

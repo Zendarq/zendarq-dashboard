@@ -37,6 +37,25 @@
   </template>
 </nav>
 
+<section class="fx">
+  <div class="fx-head">
+    <h2>Currencies</h2>
+    <span class="fx-updated" x-show="fxUpdated" x-text="'updated ' + fxUpdated"></span>
+  </div>
+  <div class="fx-strip">
+    <template x-for="p in fx" :key="p.pair">
+      <div class="fx-card">
+        <div class="fx-pair" x-text="p.pair"></div>
+        <div class="fx-rate" x-text="fxRate(p)"></div>
+        <div class="fx-change" :class="fxChangeClass(p, 1)" x-text="fxChangeText(p, 1)"></div>
+        <div class="fx-spark">
+          <canvas :id="'fxchart-' + fxId(p)"></canvas>
+        </div>
+      </div>
+    </template>
+  </div>
+</section>
+
 <main class="grid">
   <template x-for="cid in selected" :key="cid">
     <section class="card">

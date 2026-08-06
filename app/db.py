@@ -46,6 +46,19 @@ CREATE INDEX IF NOT EXISTS idx_hourly_city_ts ON hourly_weather(city, ts);
 
 DROP INDEX IF EXISTS idx_hourly_city_ts_unique;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_hourly_city_ts_unique ON hourly_weather(city, ts);
+
+CREATE TABLE IF NOT EXISTS fx_latest (
+    pair        TEXT PRIMARY KEY,
+    rate        REAL,
+    updated_at  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS fx_history (
+    pair    TEXT NOT NULL,
+    date    TEXT NOT NULL,
+    rate    REAL,
+    PRIMARY KEY (pair, date)
+);
 """
 
 
@@ -134,3 +147,48 @@ def get_daily(city: str) -> list[dict[str, Any]]:
             "SELECT * FROM daily_weather WHERE city=? ORDER BY date", (city,)
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+# ---------- FX ----------
+
+def upsert_fx(pair: str, rate: float, updated_at: str) -> None:
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO fx_latest (pair, rate, updated_at) VALUES (?,?,?) "
+            "ON CONFLICT(pair) DO UPDATE SET rate=excluded.rate, updated_at=excluded.updated_at",
+            (pair, rate, updated_at),
+        )
+
+
+def insert_fx_history(pair: str, points: list[tuple[str, float]]) -> None:
+    with _conn() as conn:
+        conn.executemany(
+            "INSERT OR REPLACE INTO fx_history (pair, date, rate) VALUES (?,?,?)",
+            [(pair, d, r) for d, r in points],
+        )
+
+
+def fx_history_empty(pair: str) -> bool:
+    with _conn() as conn:
+        row = conn.execute("SELECT 1 FROM fx_history WHERE pair=? LIMIT 1", (pair,)).fetchone()
+    return row is None
+
+
+def get_fx() -> list[dict[str, Any]]:
+    with _conn() as conn:
+        latest = {r["pair"]: dict(r) for r in conn.execute("SELECT * FROM fx_latest").fetchall()}
+        rows = conn.execute(
+            "SELECT pair, date, rate FROM fx_history ORDER BY date"
+        ).fetchall()
+    history: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        history.setdefault(r["pair"], []).append({"date": r["date"], "rate": r["rate"]})
+    out = []
+    for pair, lr in latest.items():
+        out.append({
+            "pair": pair,
+            "rate": lr["rate"],
+            "updated_at": lr["updated_at"],
+            "history": history.get(pair, []),
+        })
+    return out
