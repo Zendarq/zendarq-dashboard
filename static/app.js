@@ -308,6 +308,7 @@ document.addEventListener("alpine:init", () => {
       const today = new Date().toLocaleDateString("en-CA", { timeZone: LOCAL_TZ });
       return date === today;
     },
+    forecastDays(cid) { return (this.daily[cid] || []).slice(0, 5); },
     sunTime(iso) { return fmtTime(iso); },
   }));
 });

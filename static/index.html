@@ -84,7 +84,7 @@
       </div>
 
       <div class="forecast" x-show="daily[cid]">
-        <template x-for="d in daily[cid]" :key="d.date">
+        <template x-for="d in forecastDays(cid)" :key="d.date">
           <div class="day" :class="isToday(d.date) && 'today'">
             <span class="day-name" x-text="weekdayOf(d.date)"></span>
             <span class="day-emoji" x-text="emojiCode(d.weather_code)"></span>

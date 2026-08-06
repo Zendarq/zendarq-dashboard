@@ -144,59 +144,59 @@ body {
 .card {
   background: linear-gradient(180deg, var(--card) 0%, var(--card2) 100%);
   border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 18px 18px 16px;
+  padding: 12px 14px 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.card-head h2 { margin: 0; font-size: 1.05rem; font-weight: 700; }
-.city-time { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.card-head h2 { margin: 0; font-size: 0.88rem; font-weight: 700; }
+.city-time { color: var(--muted); font-size: 0.72rem; font-variant-numeric: tabular-nums; }
 
-.cond-row { display: flex; align-items: center; gap: 16px; padding: 14px 0 10px; }
+.cond-row { display: flex; align-items: center; gap: 12px; padding: 6px 0 4px; }
 .big-temp {
-  font-size: clamp(2.6rem, 12vw, 3.6rem); font-weight: 800; letter-spacing: -0.03em;
+  font-size: clamp(1.9rem, 8vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em;
   line-height: 1; font-variant-numeric: tabular-nums;
 }
 .cond-meta { text-align: center; }
-.cond-emoji { font-size: 1.9rem; line-height: 1.1; }
-.cond-label { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+.cond-emoji { font-size: 1.3rem; line-height: 1.1; }
+.cond-label { color: var(--muted); font-size: 0.7rem; margin-top: 2px; }
 
 .stats {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-  padding: 12px 0; margin-bottom: 6px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  padding: 7px 0; margin-bottom: 4px;
   border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
 }
-.stat { display: flex; flex-direction: column; gap: 2px; }
-.stat span { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.stat b { font-size: 0.95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat { display: flex; flex-direction: column; gap: 1px; }
+.stat span { color: var(--muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat b { font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.chart-wrap { position: relative; height: 170px; margin: 8px 0 12px; }
+.chart-wrap { position: relative; height: 105px; margin: 6px 0 8px; }
 
-/* ---------- 7-day forecast ---------- */
+/* ---------- 5-day forecast ---------- */
 
 .forecast {
-  display: flex; gap: 10px; overflow-x: auto;
-  padding: 8px 2px 12px; margin: 0 -4px;
+  display: flex; gap: 6px; overflow-x: auto;
+  padding: 4px 2px 8px; margin: 0 -4px;
   scrollbar-width: none; -webkit-overflow-scrolling: touch;
 }
 .forecast::-webkit-scrollbar { display: none; }
 
 .day {
-  flex: 0 0 auto; min-width: 58px; text-align: center;
-  padding: 8px 6px; border-radius: 12px;
+  flex: 0 0 auto; min-width: 42px; text-align: center;
+  padding: 5px 3px; border-radius: 10px;
   background: rgba(255, 255, 255, 0.04); border: 1px solid transparent;
 }
 .day.today { border-color: rgba(79, 140, 255, 0.45); background: rgba(79, 140, 255, 0.10); }
-.day-name { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 600; }
-.day-emoji { display: block; font-size: 1.25rem; padding: 4px 0; }
-.day-temps { display: flex; justify-content: center; gap: 6px; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.day-name { display: block; font-size: 0.6rem; color: var(--muted); font-weight: 600; }
+.day-emoji { display: block; font-size: 1rem; padding: 2px 0; }
+.day-temps { display: flex; justify-content: center; gap: 4px; font-size: 0.68rem; font-variant-numeric: tabular-nums; }
 .day-temps b { color: var(--text); }
 .day-temps i { color: var(--muted); font-style: normal; }
 
 .sun-times {
   display: flex; justify-content: space-between; gap: 8px;
-  color: var(--muted); font-size: 0.8rem;
-  padding-top: 10px; border-top: 1px solid var(--border);
+  color: var(--muted); font-size: 0.7rem;
+  padding-top: 6px; border-top: 1px solid var(--border);
 }
 .sun-times b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
 
