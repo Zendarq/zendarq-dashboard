@@ -29,14 +29,6 @@
   </div>
 </header>
 
-<nav class="chips" aria-label="Cities">
-  <template x-for="c in citiesMeta" :key="c.id">
-    <button class="chip" :class="isSelected(c.id) && 'active'" @click="toggleCity(c.id)">
-      <span x-text="c.name"></span>
-    </button>
-  </template>
-</nav>
-
 <section class="fx">
   <div class="fx-head">
     <h2>Currencies</h2>

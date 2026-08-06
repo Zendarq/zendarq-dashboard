@@ -106,22 +106,6 @@ document.addEventListener("alpine:init", () => {
       await this.loadAll(false);
     },
 
-    async toggleCity(id) {
-      if (this.isSelected(id)) {
-        this.selected = this.selected.filter(x => x !== id);
-        this.$nextTick(() => this.buildCharts());
-      } else {
-        this.selected = [...this.selected, id];
-        const [h, d] = await Promise.all([
-          fetch(`/api/hourly?city=${id}`).then(r => r.json()),
-          fetch(`/api/daily?city=${id}`).then(r => r.json()),
-        ]);
-        this.hourly[id] = h.points;
-        this.daily[id] = d.days;
-        this.$nextTick(() => this.buildCharts());
-      }
-    },
-
     toggleUnits(u) {
       if (this.units === u) return;
       this.units = u;
@@ -288,8 +272,6 @@ document.addEventListener("alpine:init", () => {
         return { id: d.id, name: hit ? hit.name : d.name };
       });
     },
-
-    isSelected(id) { return this.selected.includes(id); },
     cityName(id) {
       const hit = this.current.find(c => c.id === id);
       if (hit) return hit.name;
