@@ -33,6 +33,14 @@ NEWS_SOURCES = [
     {"id": "nbc", "name": "NBC",        "kind": "rss",  "url": "https://feeds.nbcnews.com/nbcnews/public/news"},
     {"id": "nhk", "name": "NHK World",  "kind": "json", "url": "https://www3.nhk.or.jp/nhkworld/data/en/news/all.json"},
     {"id": "aj",  "name": "Al Jazeera", "kind": "rss",  "url": "https://www.aljazeera.com/xml/rss/all.xml"},
+    # Local: New Hyde Park / Nassau / Queens area. Aggregated from LI/Queens
+    # outlets that expose real RSS (Google News RSS redirects can't be resolved
+    # to article URLs anymore, so their popup summaries would fail).
+    {"id": "local", "name": "Local", "kind": "multi", "urls": [
+        "https://www.longislandpress.com/feed/",
+        "https://qns.com/feed/",
+        "https://www.amny.com/feed/",
+    ]},
 ]
 
 NEWS_LIMIT = 10
@@ -42,7 +50,7 @@ SUMMARY_MAX_CHARS = 600
 # Domains the summary endpoint may fetch (SSRF guard)
 ALLOWED_NEWS_DOMAINS = (
     "cnn.com", "bbc.co.uk", "bbc.com", "nbcnews.com", "msnbc.com", "nhk.or.jp",
-    "aljazeera.com",
+    "aljazeera.com", "longislandpress.com", "qns.com", "amny.com",
 )
 
 # In-memory cache: {source_id: [item, ...]}
@@ -128,6 +136,40 @@ def _fetch_html(src: dict[str, str]) -> list[dict[str, str]]:
     return stories
 
 
+def _fetch_multi(src: dict[str, Any]) -> list[dict[str, str]]:
+    """Aggregate several RSS feeds into one list, newest first, deduped.
+
+    Items from domains outside ALLOWED_NEWS_DOMAINS are dropped so every
+    story in the tab can actually get a popup summary.
+    """
+    from email.utils import parsedate_to_datetime
+    from urllib.parse import urlparse
+
+    def allowed(link: str) -> bool:
+        host = (urlparse(link).hostname or "").lower()
+        return any(host == d or host.endswith("." + d) for d in ALLOWED_NEWS_DOMAINS)
+
+    stories: list[dict[str, str]] = []
+    seen_links: set[str] = set()
+    for url in src["urls"]:
+        sub = {k: v for k, v in src.items() if k != "urls"}
+        sub["url"] = url
+        for story in _fetch_rss(sub):
+            if story["link"] not in seen_links and allowed(story["link"]):
+                seen_links.add(story["link"])
+                stories.append(story)
+
+    def pub_ts(s: dict[str, str]) -> float:
+        try:
+            dt = parsedate_to_datetime(s["published"]) if s["published"] else None
+            return dt.timestamp() if dt else 0.0
+        except Exception:  # noqa: BLE001
+            return 0.0
+
+    stories.sort(key=pub_ts, reverse=True)
+    return stories[:NEWS_LIMIT]
+
+
 def fetch_feeds() -> None:
     """Parse all feeds and store the top N items per source in _cache."""
     items: dict[str, list[dict[str, str]]] = {}
@@ -138,6 +180,8 @@ def fetch_feeds() -> None:
                 items[src["id"]] = _fetch_json(src)
             elif kind == "html":
                 items[src["id"]] = _fetch_html(src)
+            elif kind == "multi":
+                items[src["id"]] = _fetch_multi(src)
             else:
                 items[src["id"]] = _fetch_rss(src)
             log.info("news: %s -> %d stories", src["id"], len(items[src["id"]]))
