@@ -10,6 +10,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app import db
 from app.config import FX_REFRESH_SECONDS, WEATHER_REFRESH_SECONDS
 from app.sources import fx as fx_source
+from app.sources import news as news_source
 from app.sources import weather as weather_source
 
 log = logging.getLogger(__name__)
@@ -46,6 +47,11 @@ def refresh_fx() -> None:
         log.exception("fx refresh failed")
 
 
+def refresh_news() -> None:
+    """Fetch top stories from all news feeds (in-memory cache)."""
+    news_source.fetch_feeds()
+
+
 def start_scheduler() -> BackgroundScheduler:
     global _scheduler
     if _scheduler is not None:
@@ -65,6 +71,14 @@ def start_scheduler() -> BackgroundScheduler:
         "interval",
         seconds=FX_REFRESH_SECONDS,
         id="fx_refresh",
+        max_instances=1,
+        coalesce=True,
+    )
+    _scheduler.add_job(
+        refresh_news,
+        "interval",
+        seconds=news_source.NEWS_REFRESH_SECONDS,
+        id="news_refresh",
         max_instances=1,
         coalesce=True,
     )

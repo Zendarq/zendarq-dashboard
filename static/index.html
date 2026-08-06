@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="/static/style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body x-data="dashboard" x-init="init()">
+<body x-data="dashboard" x-init="init()" :class="newsModal.open && 'modal-open'">
 
 <header class="topbar">
   <div class="brand">
@@ -106,6 +106,28 @@
   </template>
 </main>
 
+<section class="news">
+  <div class="news-head">
+    <h2>Top News</h2>
+    <span class="news-updated" x-show="news.fetchedAt" x-text="'updated ' + newsTime()"></span>
+  </div>
+  <div class="news-tabs" role="tablist">
+    <template x-for="s in news.sources" :key="s.id">
+      <button class="news-tab" :class="news.active === s.id && 'active'" @click="setNewsTab(s.id)" x-text="s.name"></button>
+    </template>
+  </div>
+  <div class="news-list">
+    <template x-for="(item, i) in newsList()" :key="i">
+      <button class="news-item" @click="openNewsItem(item)">
+        <span class="news-num" x-text="i + 1"></span>
+        <span class="news-title" x-text="item.title"></span>
+        <span class="news-chevron" aria-hidden="true">›</span>
+      </button>
+    </template>
+    <p class="news-empty" x-show="!newsLoaded">Loading stories…</p>
+  </div>
+</section>
+
 <footer>
   <span x-show="lastUpdated">Updated <b x-text="lastUpdated"></b> · auto-refreshes every 15 min</span>
   <span x-show="!lastUpdated">Loading…</span>
@@ -113,5 +135,17 @@
 
 <script src="/static/app.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
+
+<!-- Article summary modal -->
+<div class="modal-backdrop" x-show="newsModal.open" @click.self="closeNewsModal()" @keydown.escape.window="closeNewsModal()" x-cloak>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Article summary">
+    <button class="modal-close" @click="closeNewsModal()" aria-label="Close">✕</button>
+    <h3 x-text="newsModal.title"></h3>
+    <p class="modal-meta" x-text="newsModal.source"></p>
+    <p class="modal-summary" x-show="!newsModal.loading" x-text="newsModal.summary"></p>
+    <p class="modal-loading" x-show="newsModal.loading">Fetching summary…</p>
+    <a class="modal-link" :href="newsModal.link" target="_blank" rel="noopener">Read full article ↗</a>
+  </div>
+</div>
 </body>
 </html>

@@ -9,12 +9,13 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import db, scheduler
 from app.config import CITY_BY_ID, STATIC_DIR
+from app.sources import news as news_source
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     # Immediate first fetch so the dashboard isn't empty on boot.
     sched.add_job(scheduler.refresh_all_weather, "date", run_date=None)  # runs once, now
     sched.add_job(scheduler.refresh_fx, "date", run_date=None)           # runs once, now
+    sched.add_job(scheduler.refresh_news, "date", run_date=None)         # runs once, now
     yield
     scheduler.stop_scheduler()
 
@@ -82,6 +84,28 @@ async def api_daily(city: str) -> dict:
 @app.get("/api/fx")
 async def api_fx() -> dict:
     return {"pairs": db.get_fx()}
+
+
+@app.get("/api/news")
+async def api_news() -> dict:
+    return news_source.get_cache()
+
+
+@app.get("/api/news/summary")
+async def api_news_summary(url: str = Query(...)) -> dict:
+    """Extractive summary of a news article (allowlisted domains only)."""
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme not in ("http", "https") or not any(
+        host == d or host.endswith("." + d) for d in news_source.ALLOWED_NEWS_DOMAINS
+    ):
+        raise HTTPException(status_code=400, detail="URL not allowed")
+    summary = news_source.summarize(url)
+    if not summary:
+        raise HTTPException(status_code=502, detail="Could not extract article text")
+    return {"url": url, "summary": summary}
 
 
 @app.post("/api/refresh")

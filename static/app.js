@@ -42,6 +42,9 @@ document.addEventListener("alpine:init", () => {
     current: [],
     fx: [],
     fxUpdated: null,
+    news: { sources: [], items: {}, active: "cnn", fetchedAt: null },
+    newsLoaded: false,
+    newsModal: { open: false, title: "", link: "", source: "", summary: "", loading: false },
     hourly: {},
     daily: {},
     lastUpdated: null,
@@ -66,9 +69,10 @@ document.addEventListener("alpine:init", () => {
     async loadAll(silent = false) {
       if (!silent) this.refreshing = true;
       try {
-        const [cur, fx, ...rest] = await Promise.all([
+        const [cur, fx, news, ...rest] = await Promise.all([
           fetch("/api/current").then(r => r.json()),
           fetch("/api/fx").then(r => r.json()),
+          fetch("/api/news").then(r => r.json()),
           ...this.selected.map(cid => fetch(`/api/hourly?city=${cid}`).then(r => r.json())),
           ...this.selected.map(cid => fetch(`/api/daily?city=${cid}`).then(r => r.json())),
         ]);
@@ -77,6 +81,10 @@ document.addEventListener("alpine:init", () => {
         const daily = rest.slice(n);
         this.current = cur.cities;
         this.fx = fx.pairs;
+        this.news.sources = news.sources;
+        this.news.items = news.items;
+        this.news.fetchedAt = news.fetched_at;
+        this.newsLoaded = true;
         const times = this.fx.map(p => p.updated_at).filter(Boolean);
         this.fxUpdated = times.length ? new Date(Math.max(...times.map(t => new Date(t).getTime()))).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : null;
         this.hourly = Object.fromEntries(hourly.map(x => [x.city, x.points]));
@@ -169,6 +177,37 @@ document.addEventListener("alpine:init", () => {
         });
       });
     },
+
+    /* ---------- news ---------- */
+
+    newsTime() {
+      return this.news.fetchedAt ? this.news.fetchedAt.slice(11, 16) : "";
+    },
+
+    newsList() { return (this.news.items[this.news.active] || []).slice(0, 10); },
+
+    setNewsTab(id) { this.news.active = id; },
+
+    async openNewsItem(item) {
+      const src = this.news.sources.find(s => s.id === this.news.active);
+      this.newsModal = {
+        open: true, title: item.title, link: item.link,
+        source: src ? src.name : "", summary: "", loading: true,
+      };
+      try {
+        const d = await fetch("/api/news/summary?url=" + encodeURIComponent(item.link)).then(r => {
+          if (!r.ok) throw new Error("summary fetch failed");
+          return r.json();
+        });
+        this.newsModal.summary = d.summary || "No summary available for this article.";
+      } catch (e) {
+        console.error(e);
+        this.newsModal.summary = "Couldn't fetch the summary — tap “Read full article” to open it directly.";
+      }
+      this.newsModal.loading = false;
+    },
+
+    closeNewsModal() { this.newsModal.open = false; },
 
     /* ---------- FX ---------- */
 
